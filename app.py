@@ -1,19 +1,16 @@
 import streamlit as st
 import pinecone
-from pinecone import ServerlessSpec
 import pandas as pd
 import openai
 from io import BytesIO
 
-# Set up OpenAI and Pinecone (you should use environment variables for these)
-openai.api_key = "your-openai-api-key"
-pinecone.init(api_key="your-pinecone-api-key")
+# Set up OpenAI and Pinecone
+openai.api_key = st.secrets["openai"]["api_key"]
+pinecone.init(api_key=st.secrets["pinecone"]["api_key"], environment="gcp-starter")
 
 index_name = "contacts"
-# Specify the serverless configuration
-spec = ServerlessSpec(cloud="aws", region="us-east-1")
-# Initialize the index with serverless spec
-index = pinecone.Index(index_name, spec=spec)
+# Initialize the index without ServerlessSpec
+index = pinecone.Index(index_name)
 
 def get_embedding(text):
     response = openai.Embedding.create(input=text, model="text-embedding-ada-002")
