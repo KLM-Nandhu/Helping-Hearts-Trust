@@ -89,41 +89,84 @@ with st.sidebar:
         else:
             st.error("Please enter both name and number.")
 
-    # Edit and delete options
-    st.subheader("✏️ Edit or 🗑️ Delete Customer")
+    # Search, edit and delete options
+    st.subheader("🔍 Search, ✏️ Edit or 🗑️ Delete Customer")
     search_option = st.radio("Search by:", ("Name", "Number"))
     search_term = st.text_input(f"Enter {search_option}")
     
     if search_term:
+        # Search in both regular and repeating customers
         if search_option == "Name":
-            selected_customers = st.session_state.df[st.session_state.df["Name"].str.contains(search_term, case=False, na=False)]
+            selected_regular = st.session_state.df[st.session_state.df["Name"].str.contains(search_term, case=False, na=False)]
+            selected_repeating = st.session_state.df_repeating[st.session_state.df_repeating["Name"].str.contains(search_term, case=False, na=False)]
         else:  # Number
-            selected_customers = st.session_state.df[st.session_state.df["Number"].str.contains(search_term, na=False)]
+            selected_regular = st.session_state.df[st.session_state.df["Number"].str.contains(search_term, na=False)]
+            selected_repeating = st.session_state.df_repeating[st.session_state.df_repeating["Number"].str.contains(search_term, na=False)]
         
-        if not selected_customers.empty:
+        if not selected_regular.empty or not selected_repeating.empty:
             st.write("Matching customers:")
-            st.write(selected_customers[["Name", "Number"]])
+            if not selected_regular.empty:
+                st.write("Regular Customers:")
+                st.write(selected_regular[["Name", "Number"]])
+            if not selected_repeating.empty:
+                st.write("Repeating Customers:")
+                st.write(selected_repeating[["Name", "Number"]])
             
+            # Combine results for selection
+            all_results = pd.concat([selected_regular, selected_repeating]).reset_index(drop=True)
             selected_index = st.selectbox("Select a customer to edit/delete:", 
-                                          options=selected_customers.index,
-                                          format_func=lambda x: f"{selected_customers.loc[x, 'Name']} - {selected_customers.loc[x, 'Number']}")
+                                          options=range(len(all_results)),
+                                          format_func=lambda x: f"{all_results.iloc[x]['Name']} - {all_results.iloc[x]['Number']}")
             
-            edit_name = st.text_input("Edit Name", value=selected_customers.loc[selected_index, "Name"])
-            edit_number = st.text_input("Edit Number", value=selected_customers.loc[selected_index, "Number"])
+            selected_customer = all_results.iloc[selected_index]
+            edit_name = st.text_input("Edit Name", value=selected_customer["Name"])
+            edit_number = st.text_input("Edit Number", value=selected_customer["Number"])
             
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("✅ Update Customer", key="update_customer"):
-                    st.session_state.df.loc[selected_index, "Name"] = edit_name
-                    st.session_state.df.loc[selected_index, "Number"] = edit_number.replace(',', '')
-                    st.session_state.df.loc[selected_index, "Last Updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    save_data(st.session_state.df, "customers.xlsx")
+                    # Determine which DataFrame to update
+                    if selected_index < len(selected_regular):
+                        df_to_update = st.session_state.df
+                        file_to_update = "customers.xlsx"
+                    else:
+                        df_to_update = st.session_state.df_repeating
+                        file_to_update = "repeating_customers.xlsx"
+                    
+                    # Update the customer
+                    customer_index = df_to_update[
+                        (df_to_update["Name"] == selected_customer["Name"]) & 
+                        (df_to_update["Number"] == selected_customer["Number"])
+                    ].index[0]
+                    df_to_update.loc[customer_index, "Name"] = edit_name
+                    df_to_update.loc[customer_index, "Number"] = edit_number.replace(',', '')
+                    df_to_update.loc[customer_index, "Last Updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    save_data(df_to_update, file_to_update)
                     st.success("Customer updated successfully!")
             with col2:
                 if st.button("🗑️ Delete Customer", key="delete_customer"):
-                    st.session_state.df = st.session_state.df.drop(selected_index).reset_index(drop=True)
-                    save_data(st.session_state.df, "customers.xlsx")
+                    # Determine which DataFrame to update
+                    if selected_index < len(selected_regular):
+                        df_to_update = st.session_state.df
+                        file_to_update = "customers.xlsx"
+                    else:
+                        df_to_update = st.session_state.df_repeating
+                        file_to_update = "repeating_customers.xlsx"
+                    
+                    # Delete the customer
+                    customer_index = df_to_update[
+                        (df_to_update["Name"] == selected_customer["Name"]) & 
+                        (df_to_update["Number"] == selected_customer["Number"])
+                    ].index[0]
+                    df_to_update = df_to_update.drop(customer_index).reset_index(drop=True)
+                    save_data(df_to_update, file_to_update)
                     st.success("Customer deleted successfully!")
+                    
+                    # Update the session state
+                    if file_to_update == "customers.xlsx":
+                        st.session_state.df = df_to_update
+                    else:
+                        st.session_state.df_repeating = df_to_update
         else:
             st.warning(f"No customer found with this {search_option.lower()}.")
 
