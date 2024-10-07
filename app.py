@@ -11,7 +11,7 @@ st.set_page_config(page_title="Customer Manager", layout="wide")
 st.markdown("""
     <style>
     .stApp {
-        background-color: #83e5f2;
+        background-color: #c7edf2;
     }
     .main .block-container {
         background-color: #ebe4e4;
