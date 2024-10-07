@@ -17,17 +17,24 @@ st.markdown("""
         background-color: #4CAF50;
         color: white;
     }
+    .sidebar .stButton>button {
+        background-color: #3498db;
+        color: white;
+    }
     </style>
     """, unsafe_allow_html=True)
 
 # Function to load data
 def load_data(file_name):
     if os.path.exists(file_name):
-        return pd.read_excel(file_name)
+        df = pd.read_excel(file_name)
+        df['Number'] = df['Number'].astype(str).str.replace(',', '')  # Remove commas from numbers
+        return df.sort_values('Name')  # Sort alphabetically by name
     return pd.DataFrame(columns=["Name", "Number", "Last Updated"])
 
 # Function to save data
 def save_data(df, file_name):
+    df = df.sort_values('Name')  # Sort alphabetically by name before saving
     df.to_excel(file_name, index=False, engine='openpyxl')
 
 # Function to convert DataFrame to Excel
@@ -47,10 +54,11 @@ with st.sidebar:
     st.title("📝 Add New Customer")
     new_name = st.text_input("Name")
     new_number = st.text_input("Number")
-    if st.button("➕ Add Customer"):
+    if st.button("➕ Add Customer", key="add_customer"):
         if new_name and new_number:
+            new_number = new_number.replace(',', '')  # Remove any commas from the input
             if new_number in df["Number"].values:
-                if st.sidebar.warning("This number already exists. Do you want to add it to the repeating sheet?"):
+                if st.warning("This number already exists. Do you want to add it to the repeating sheet?"):
                     new_row = pd.DataFrame({
                         "Name": [new_name],
                         "Number": [new_number],
@@ -58,7 +66,7 @@ with st.sidebar:
                     })
                     df_repeating = pd.concat([df_repeating, new_row], ignore_index=True)
                     save_data(df_repeating, "repeating_customers.xlsx")
-                    st.sidebar.success("Customer added to repeating sheet!")
+                    st.success("Customer added to repeating sheet!")
             else:
                 new_row = pd.DataFrame({
                     "Name": [new_name],
@@ -67,9 +75,9 @@ with st.sidebar:
                 })
                 df = pd.concat([df, new_row], ignore_index=True)
                 save_data(df, "customers.xlsx")
-                st.sidebar.success("Customer added successfully!")
+                st.success("Customer added successfully!")
         else:
-            st.sidebar.error("Please enter both name and number.")
+            st.error("Please enter both name and number.")
 
     # Edit and delete options
     st.subheader("✏️ Edit or 🗑️ Delete Customer")
@@ -95,14 +103,14 @@ with st.sidebar:
             
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("✅ Update Customer"):
+                if st.button("✅ Update Customer", key="update_customer"):
                     df.loc[selected_index, "Name"] = edit_name
-                    df.loc[selected_index, "Number"] = edit_number
+                    df.loc[selected_index, "Number"] = edit_number.replace(',', '')
                     df.loc[selected_index, "Last Updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     save_data(df, "customers.xlsx")
                     st.success("Customer updated successfully!")
             with col2:
-                if st.button("🗑️ Delete Customer"):
+                if st.button("🗑️ Delete Customer", key="delete_customer"):
                     df = df.drop(selected_index)
                     save_data(df, "customers.xlsx")
                     st.success("Customer deleted successfully!")
@@ -115,7 +123,7 @@ st.title("👥 Customer Manager")
 
 # View all customers
 if st.button("👁️ View All Customers"):
-    st.write(df[["Name", "Number"]].sort_values("Name"))
+    st.write(df[["Name", "Number"]].reset_index(drop=True).rename_axis('Index').reset_index())
 
 # Download options
 col1, col2 = st.columns(2)
