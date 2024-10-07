@@ -182,7 +182,7 @@ with st.sidebar:
             st.warning(f"No customer found with this {search_option.lower()}.")
 
 # Main content
-st.title("👥 Helping Hearts Contacts :")
+st.title("👥 Helping Hearts Contacts ")
 
 # View customers
 col1, col2 = st.columns(2)
