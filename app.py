@@ -61,10 +61,18 @@ def delete_all_data():
     save_data(df, "customers.xlsx")
     save_data(df_repeating, "repeating_customers.xlsx")
     st.success("All data has been deleted successfully!")
+    st.session_state.show_regular = False
+    st.session_state.show_repeating = False
 
 # Load data
 df = load_data("customers.xlsx")
 df_repeating = load_data("repeating_customers.xlsx")
+
+# Initialize session state for showing/hiding customer data
+if 'show_regular' not in st.session_state:
+    st.session_state.show_regular = False
+if 'show_repeating' not in st.session_state:
+    st.session_state.show_repeating = False
 
 # Sidebar for adding new customers
 with st.sidebar:
@@ -75,7 +83,7 @@ with st.sidebar:
         if new_name and new_number:
             new_number = new_number.replace(',', '')  # Remove any commas from the input
             if new_number in df["Number"].values:
-                if st.warning("This number already exists. Do you want to add it to the repeating sheet?"):
+                if st.sidebar.warning("This number already exists. Do you want to add it to the repeating sheet?"):
                     new_row = pd.DataFrame({
                         "Name": [new_name],
                         "Number": [new_number],
@@ -142,14 +150,14 @@ st.title("👥 Customer Manager")
 col1, col2 = st.columns(2)
 
 with col1:
-    show_regular = st.checkbox("👁️ Show Regular Customers", value=False)
-    if show_regular:
+    st.session_state.show_regular = st.checkbox("👁️ Show Regular Customers", value=st.session_state.show_regular)
+    if st.session_state.show_regular:
         st.subheader("Regular Customers")
         st.write(df[["Name", "Number"]].reset_index(drop=True).rename_axis('Index').reset_index())
 
 with col2:
-    show_repeating = st.checkbox("👁️ Show Repeating Customers", value=False)
-    if show_repeating:
+    st.session_state.show_repeating = st.checkbox("👁️ Show Repeating Customers", value=st.session_state.show_repeating)
+    if st.session_state.show_repeating:
         st.subheader("Repeating Customers")
         st.write(df_repeating[["Name", "Number"]].reset_index(drop=True).rename_axis('Index').reset_index())
 
