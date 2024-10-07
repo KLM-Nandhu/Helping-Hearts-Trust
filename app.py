@@ -5,7 +5,7 @@ from datetime import datetime
 from io import BytesIO
 
 # Set page configuration
-st.set_page_config(page_title="Customer Manager", layout="wide")
+st.set_page_config(page_title="Helping Hearts Contacts", layout="wide")
 
 # Custom CSS for background color and styling
 st.markdown("""
@@ -201,7 +201,7 @@ with st.sidebar:
             st.warning(f"No customer found with this {search_option.lower()}.")
 
 # Main content
-st.title("👥 Customer Manager")
+st.title("👥 Helping Hearts Contacts")
 
 # Display delete status if any
 if st.session_state.delete_status:
