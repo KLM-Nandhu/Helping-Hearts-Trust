@@ -1,61 +1,79 @@
 import streamlit as st
-import pinecone
 import pandas as pd
-import openai
-from io import BytesIO
+import os
+from datetime import datetime
 
-# Set up OpenAI and Pinecone
-openai.api_key = st.secrets["openai"]["api_key"]
-pinecone.init(api_key=st.secrets["pinecone"]["api_key"], environment="gcp-starter")
+# Set page configuration
+st.set_page_config(page_title="Customer Manager", layout="wide")
 
-index_name = "contacts"
-# Initialize the index without ServerlessSpec
-index = pinecone.Index(index_name)
+# Function to load data
+def load_data():
+    if os.path.exists("customers.xlsx"):
+        return pd.read_excel("customers.xlsx")
+    return pd.DataFrame(columns=["Name", "Number", "Last Updated"])
 
-def get_embedding(text):
-    response = openai.Embedding.create(input=text, model="text-embedding-ada-002")
-    return response['data'][0]['embedding']
+# Function to save data
+def save_data(df):
+    df.to_excel("customers.xlsx", index=False)
 
-def add_contact(name, number):
-    embedding = get_embedding(f"{name} {number}")
-    index.upsert(vectors=[(f"{name}_{number}", embedding, {"name": name, "number": number})])
-    st.success("Contact added successfully!")
+# Load data
+df = load_data()
 
-def view_contacts():
-    query_response = index.query(vector=[0]*1536, top_k=1000, include_metadata=True)
-    contacts = [match['metadata'] for match in query_response['matches']]
-    df = pd.DataFrame(contacts)
-    st.table(df)
-    return df
+# Sidebar for adding new customers
+st.sidebar.title("📝 Add New Customer")
+new_name = st.sidebar.text_input("Name")
+new_number = st.sidebar.text_input("Number")
+if st.sidebar.button("➕ Add Customer"):
+    if new_name and new_number:
+        new_row = pd.DataFrame({
+            "Name": [new_name],
+            "Number": [new_number],
+            "Last Updated": [datetime.now().strftime("%Y-%m-%d %H:%M:%S")]
+        })
+        df = pd.concat([df, new_row], ignore_index=True)
+        save_data(df)
+        st.sidebar.success("Customer added successfully!")
+    else:
+        st.sidebar.error("Please enter both name and number.")
 
-def download_contacts(df):
-    excel_file = BytesIO()
-    df.to_excel(excel_file, index=False, engine="openpyxl")
-    excel_file.seek(0)
-    return excel_file
+# Main content
+st.title("👥 Customer Manager")
 
-st.title("Contact Management System")
+# View all customers
+if st.button("👁️ View All Customers"):
+    st.write(df.sort_values("Last Updated", ascending=False))
 
-tab1, tab2 = st.tabs(["Add Contact", "View Contacts"])
+# Download option
+if not df.empty:
+    csv = df.to_csv(index=False)
+    st.download_button(
+        label="📥 Download Customer Data",
+        data=csv,
+        file_name="customer_data.csv",
+        mime="text/csv",
+    )
 
-with tab1:
-    st.header("Add New Contact")
-    name = st.text_input("Name")
-    number = st.text_input("Number")
-    if st.button("Add Contact"):
-        add_contact(name, number)
+# Edit and delete options
+st.subheader("✏️ Edit or 🗑️ Delete Customer")
+selected_customer = st.selectbox("Select a customer", df["Name"].tolist())
 
-with tab2:
-    st.header("View Contacts")
-    if st.button("Refresh Contacts"):
-        df = view_contacts()
-        if not df.empty:
-            excel_file = download_contacts(df)
-            st.download_button(
-                label="Download contacts as Excel",
-                data=excel_file,
-                file_name="contacts.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-        else:
-            st.info("No contacts found.")
+if selected_customer:
+    customer_index = df[df["Name"] == selected_customer].index[0]
+    col1, col2 = st.columns(2)
+
+    with col1:
+        edit_name = st.text_input("Edit Name", value=df.loc[customer_index, "Name"])
+        edit_number = st.text_input("Edit Number", value=df.loc[customer_index, "Number"])
+        if st.button("✅ Update Customer"):
+            df.loc[customer_index, "Name"] = edit_name
+            df.loc[customer_index, "Number"] = edit_number
+            df.loc[customer_index, "Last Updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            save_data(df)
+            st.success("Customer updated successfully!")
+
+    with col2:
+        if st.button("🗑️ Delete Customer"):
+            df = df.drop(customer_index)
+            save_data(df)
+            st.success("Customer deleted successfully!")
+            st.experimental_rerun()
