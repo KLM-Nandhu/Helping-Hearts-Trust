@@ -19,7 +19,7 @@ st.markdown("""
         border-radius: 10px;
     }
     [data-testid="stSidebar"] {
-        background-color: #e8f0fe;
+        background-color: #96f2f2;
     }
     .stButton>button {
         background-color: #4CAF50;
