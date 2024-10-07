@@ -53,6 +53,15 @@ def to_excel(df):
     processed_data = output.getvalue()
     return processed_data
 
+# Function to delete all data
+def delete_all_data():
+    global df, df_repeating
+    df = pd.DataFrame(columns=["Name", "Number", "Last Updated"])
+    df_repeating = pd.DataFrame(columns=["Name", "Number", "Last Updated"])
+    save_data(df, "customers.xlsx")
+    save_data(df_repeating, "repeating_customers.xlsx")
+    st.success("All data has been deleted successfully!")
+
 # Load data
 df = load_data("customers.xlsx")
 df_repeating = load_data("repeating_customers.xlsx")
@@ -166,3 +175,11 @@ with col2:
         )
     else:
         st.write("No repeating customers data available.")
+
+# Delete All Data button
+st.subheader("⚠️ Danger Zone")
+if st.button("🗑️ Delete All Data", key="delete_all_data"):
+    confirm_delete = st.warning("Are you sure you want to delete all data? This action cannot be undone.")
+    if st.button("Yes, I'm sure", key="confirm_delete"):
+        delete_all_data()
+        st.experimental_rerun()
