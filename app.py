@@ -142,12 +142,14 @@ st.title("👥 Customer Manager")
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.button("👁️ View Regular Customers"):
+    show_regular = st.checkbox("👁️ Show Regular Customers", value=False)
+    if show_regular:
         st.subheader("Regular Customers")
         st.write(df[["Name", "Number"]].reset_index(drop=True).rename_axis('Index').reset_index())
 
 with col2:
-    if st.button("👁️ View Repeating Customers"):
+    show_repeating = st.checkbox("👁️ Show Repeating Customers", value=False)
+    if show_repeating:
         st.subheader("Repeating Customers")
         st.write(df_repeating[["Name", "Number"]].reset_index(drop=True).rename_axis('Index').reset_index())
 
