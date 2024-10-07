@@ -5,7 +5,7 @@ from datetime import datetime
 from io import BytesIO
 
 # Set page configuration
-st.set_page_config(page_title="Helping Hearts Contacts : ", layout="wide")
+st.set_page_config(page_title="Customer Manager", layout="wide")
 
 # Custom CSS for background color and styling
 st.markdown("""
@@ -39,6 +39,16 @@ st.markdown("""
         text-align: center;
         padding: 10px 0;
         font-size: 14px;
+    }
+    .customer-card {
+        background-color: white;
+        padding: 1rem;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+    }
+    .customer-card h4 {
+        margin-top: 0;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -116,73 +126,82 @@ with st.sidebar:
         
         if not selected_regular.empty or not selected_repeating.empty:
             st.write("Matching customers:")
+            
+            # Display regular customers
             if not selected_regular.empty:
-                st.write("Regular Customers:")
-                st.write(selected_regular[["Name", "Number"]])
+                st.subheader("Regular Customers")
+                for _, customer in selected_regular.iterrows():
+                    with st.container():
+                        st.markdown(f"""
+                        <div class="customer-card">
+                            <h4>{customer['Name']}</h4>
+                            <p>Number: {customer['Number']}</p>
+                            <p>Last Updated: {customer['Last Updated']}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button(f"Edit {customer['Name']} (Regular)", key=f"edit_regular_{customer['Number']}"):
+                                st.session_state.edit_customer = {'df': 'regular', 'index': customer.name, 'data': customer}
+                        with col2:
+                            if st.button(f"Delete {customer['Name']} (Regular)", key=f"delete_regular_{customer['Number']}"):
+                                st.session_state.delete_customer = {'df': 'regular', 'index': customer.name}
+            
+            # Display repeating customers
             if not selected_repeating.empty:
-                st.write("Repeating Customers:")
-                st.write(selected_repeating[["Name", "Number"]])
+                st.subheader("Repeating Customers")
+                for _, customer in selected_repeating.iterrows():
+                    with st.container():
+                        st.markdown(f"""
+                        <div class="customer-card">
+                            <h4>{customer['Name']}</h4>
+                            <p>Number: {customer['Number']}</p>
+                            <p>Last Updated: {customer['Last Updated']}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button(f"Edit {customer['Name']} (Repeating)", key=f"edit_repeating_{customer['Number']}"):
+                                st.session_state.edit_customer = {'df': 'repeating', 'index': customer.name, 'data': customer}
+                        with col2:
+                            if st.button(f"Delete {customer['Name']} (Repeating)", key=f"delete_repeating_{customer['Number']}"):
+                                st.session_state.delete_customer = {'df': 'repeating', 'index': customer.name}
             
-            # Combine results for selection
-            all_results = pd.concat([selected_regular, selected_repeating]).reset_index(drop=True)
-            selected_index = st.selectbox("Select a customer to edit/delete:", 
-                                          options=range(len(all_results)),
-                                          format_func=lambda x: f"{all_results.iloc[x]['Name']} - {all_results.iloc[x]['Number']}")
-            
-            selected_customer = all_results.iloc[selected_index]
-            edit_name = st.text_input("Edit Name", value=selected_customer["Name"])
-            edit_number = st.text_input("Edit Number", value=selected_customer["Number"])
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("✅ Update Customer", key="update_customer"):
-                    # Determine which DataFrame to update
-                    if selected_index < len(selected_regular):
-                        df_to_update = st.session_state.df
-                        file_to_update = "customers.xlsx"
-                    else:
-                        df_to_update = st.session_state.df_repeating
-                        file_to_update = "repeating_customers.xlsx"
-                    
-                    # Update the customer
-                    customer_index = df_to_update[
-                        (df_to_update["Name"] == selected_customer["Name"]) & 
-                        (df_to_update["Number"] == selected_customer["Number"])
-                    ].index[0]
-                    df_to_update.loc[customer_index, "Name"] = edit_name
-                    df_to_update.loc[customer_index, "Number"] = edit_number.replace(',', '')
-                    df_to_update.loc[customer_index, "Last Updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    save_data(df_to_update, file_to_update)
+            # Handle edit action
+            if 'edit_customer' in st.session_state:
+                customer = st.session_state.edit_customer
+                st.subheader(f"Edit Customer: {customer['data']['Name']}")
+                edit_name = st.text_input("Edit Name", value=customer['data']['Name'])
+                edit_number = st.text_input("Edit Number", value=customer['data']['Number'])
+                if st.button("Update Customer"):
+                    df_to_update = st.session_state.df if customer['df'] == 'regular' else st.session_state.df_repeating
+                    df_to_update.loc[customer['index'], "Name"] = edit_name
+                    df_to_update.loc[customer['index'], "Number"] = edit_number.replace(',', '')
+                    df_to_update.loc[customer['index'], "Last Updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    save_data(df_to_update, "customers.xlsx" if customer['df'] == 'regular' else "repeating_customers.xlsx")
                     st.success("Customer updated successfully!")
-            with col2:
-                if st.button("🗑️ Delete Customer", key="delete_customer"):
-                    # Determine which DataFrame to update
-                    if selected_index < len(selected_regular):
-                        df_to_update = st.session_state.df
-                        file_to_update = "customers.xlsx"
-                    else:
-                        df_to_update = st.session_state.df_repeating
-                        file_to_update = "repeating_customers.xlsx"
-                    
-                    # Delete the customer
-                    customer_index = df_to_update[
-                        (df_to_update["Name"] == selected_customer["Name"]) & 
-                        (df_to_update["Number"] == selected_customer["Number"])
-                    ].index[0]
-                    df_to_update = df_to_update.drop(customer_index).reset_index(drop=True)
-                    save_data(df_to_update, file_to_update)
-                    st.success("Customer deleted successfully!")
-                    
-                    # Update the session state
-                    if file_to_update == "customers.xlsx":
+                    del st.session_state.edit_customer
+                    st.experimental_rerun()
+            
+            # Handle delete action
+            if 'delete_customer' in st.session_state:
+                customer = st.session_state.delete_customer
+                if st.button("Confirm Delete"):
+                    df_to_update = st.session_state.df if customer['df'] == 'regular' else st.session_state.df_repeating
+                    df_to_update = df_to_update.drop(customer['index']).reset_index(drop=True)
+                    save_data(df_to_update, "customers.xlsx" if customer['df'] == 'regular' else "repeating_customers.xlsx")
+                    if customer['df'] == 'regular':
                         st.session_state.df = df_to_update
                     else:
                         st.session_state.df_repeating = df_to_update
+                    st.success("Customer deleted successfully!")
+                    del st.session_state.delete_customer
+                    st.experimental_rerun()
         else:
             st.warning(f"No customer found with this {search_option.lower()}.")
 
 # Main content
-st.title("👥 Helping Hearts Contacts ")
+st.title("👥 Customer Manager")
 
 # View customers
 col1, col2 = st.columns(2)
@@ -221,6 +240,9 @@ with col2:
             file_name="repeating_customers.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
+    else:
+        st.write("No repeating customers data available.")
+
 # Footer
 st.markdown(
     """
