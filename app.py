@@ -240,8 +240,7 @@ with col2:
             file_name="repeating_customers.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
-    else:
-        st.write("No repeating customers data available.")
+
 
 # Footer
 st.markdown(
