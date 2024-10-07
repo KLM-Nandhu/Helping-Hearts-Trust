@@ -28,7 +28,7 @@ def load_data(file_name):
 
 # Function to save data
 def save_data(df, file_name):
-    df.to_excel(file_name, index=False)
+    df.to_excel(file_name, index=False, engine='openpyxl')
 
 # Function to convert DataFrame to Excel
 def to_excel(df):
