@@ -129,9 +129,18 @@ with st.sidebar:
 # Main content
 st.title("👥 Customer Manager")
 
-# View all customers
-if st.button("👁️ View All Customers"):
-    st.write(df[["Name", "Number"]].reset_index(drop=True).rename_axis('Index').reset_index())
+# View customers
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("👁️ View Regular Customers"):
+        st.subheader("Regular Customers")
+        st.write(df[["Name", "Number"]].reset_index(drop=True).rename_axis('Index').reset_index())
+
+with col2:
+    if st.button("👁️ View Repeating Customers"):
+        st.subheader("Repeating Customers")
+        st.write(df_repeating[["Name", "Number"]].reset_index(drop=True).rename_axis('Index').reset_index())
 
 # Download options
 col1, col2 = st.columns(2)
@@ -140,7 +149,7 @@ with col1:
     if not df.empty:
         excel_file = to_excel(df)
         st.download_button(
-            label="📥 Download Customer Data (XLSX)",
+            label="📥 Download Regular Customer Data (XLSX)",
             data=excel_file,
             file_name="customer_data.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -150,7 +159,7 @@ with col2:
     if not df_repeating.empty:
         excel_file_repeating = to_excel(df_repeating)
         st.download_button(
-            label="📥 Download Repeating Customers (XLSX)",
+            label="📥 Download Repeating Customer Data (XLSX)",
             data=excel_file_repeating,
             file_name="repeating_customers.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
