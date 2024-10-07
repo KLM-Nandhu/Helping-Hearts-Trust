@@ -5,7 +5,7 @@ from datetime import datetime
 from io import BytesIO
 
 # Set page configuration
-st.set_page_config(page_title="Customer Manager", layout="wide")
+st.set_page_config(page_title="Helping Hearts Contacts : ", layout="wide")
 
 # Custom CSS for background color and styling
 st.markdown("""
