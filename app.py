@@ -13,11 +13,19 @@ st.markdown("""
     .stApp {
         background-color: #f0f2f6;
     }
+    .main .block-container {
+        background-color: #ffffff;
+        padding: 3rem;
+        border-radius: 10px;
+    }
+    [data-testid="stSidebar"] {
+        background-color: #e8f0fe;
+    }
     .stButton>button {
         background-color: #4CAF50;
         color: white;
     }
-    .sidebar .stButton>button {
+    [data-testid="stSidebar"] .stButton>button {
         background-color: #3498db;
         color: white;
     }
