@@ -53,9 +53,11 @@ def to_excel(df):
     processed_data = output.getvalue()
     return processed_data
 
-# Load data
-df = load_data("customers.xlsx")
-df_repeating = load_data("repeating_customers.xlsx")
+# Initialize session state
+if 'df' not in st.session_state:
+    st.session_state.df = load_data("customers.xlsx")
+if 'df_repeating' not in st.session_state:
+    st.session_state.df_repeating = load_data("repeating_customers.xlsx")
 
 # Sidebar for adding new customers
 with st.sidebar:
@@ -65,15 +67,15 @@ with st.sidebar:
     if st.button("➕ Add Customer", key="add_customer"):
         if new_name and new_number:
             new_number = new_number.replace(',', '')  # Remove any commas from the input
-            if new_number in df["Number"].values:
+            if new_number in st.session_state.df["Number"].values:
                 if st.sidebar.warning("This number already exists. Do you want to add it to the repeating sheet?"):
                     new_row = pd.DataFrame({
                         "Name": [new_name],
                         "Number": [new_number],
                         "Last Updated": [datetime.now().strftime("%Y-%m-%d %H:%M:%S")]
                     })
-                    df_repeating = pd.concat([df_repeating, new_row], ignore_index=True)
-                    save_data(df_repeating, "repeating_customers.xlsx")
+                    st.session_state.df_repeating = pd.concat([st.session_state.df_repeating, new_row], ignore_index=True)
+                    save_data(st.session_state.df_repeating, "repeating_customers.xlsx")
                     st.success("Customer added to repeating sheet!")
             else:
                 new_row = pd.DataFrame({
@@ -81,8 +83,8 @@ with st.sidebar:
                     "Number": [new_number],
                     "Last Updated": [datetime.now().strftime("%Y-%m-%d %H:%M:%S")]
                 })
-                df = pd.concat([df, new_row], ignore_index=True)
-                save_data(df, "customers.xlsx")
+                st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
+                save_data(st.session_state.df, "customers.xlsx")
                 st.success("Customer added successfully!")
         else:
             st.error("Please enter both name and number.")
@@ -94,9 +96,9 @@ with st.sidebar:
     
     if search_term:
         if search_option == "Name":
-            selected_customers = df[df["Name"].str.contains(search_term, case=False, na=False)]
+            selected_customers = st.session_state.df[st.session_state.df["Name"].str.contains(search_term, case=False, na=False)]
         else:  # Number
-            selected_customers = df[df["Number"].str.contains(search_term, na=False)]
+            selected_customers = st.session_state.df[st.session_state.df["Number"].str.contains(search_term, na=False)]
         
         if not selected_customers.empty:
             st.write("Matching customers:")
@@ -112,17 +114,16 @@ with st.sidebar:
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("✅ Update Customer", key="update_customer"):
-                    df.loc[selected_index, "Name"] = edit_name
-                    df.loc[selected_index, "Number"] = edit_number.replace(',', '')
-                    df.loc[selected_index, "Last Updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    save_data(df, "customers.xlsx")
+                    st.session_state.df.loc[selected_index, "Name"] = edit_name
+                    st.session_state.df.loc[selected_index, "Number"] = edit_number.replace(',', '')
+                    st.session_state.df.loc[selected_index, "Last Updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    save_data(st.session_state.df, "customers.xlsx")
                     st.success("Customer updated successfully!")
             with col2:
                 if st.button("🗑️ Delete Customer", key="delete_customer"):
-                    df = df.drop(selected_index)
-                    save_data(df, "customers.xlsx")
+                    st.session_state.df = st.session_state.df.drop(selected_index).reset_index(drop=True)
+                    save_data(st.session_state.df, "customers.xlsx")
                     st.success("Customer deleted successfully!")
-                    st.experimental_rerun()
         else:
             st.warning(f"No customer found with this {search_option.lower()}.")
 
@@ -136,20 +137,20 @@ with col1:
     show_regular = st.checkbox("👁️ Show Regular Customers", value=True)
     if show_regular:
         st.subheader("Regular Customers")
-        st.write(df[["Name", "Number"]].reset_index(drop=True).rename_axis('Index').reset_index())
+        st.write(st.session_state.df[["Name", "Number"]].reset_index(drop=True).rename_axis('Index').reset_index())
 
 with col2:
     show_repeating = st.checkbox("👁️ Show Repeating Customers", value=True)
     if show_repeating:
         st.subheader("Repeating Customers")
-        st.write(df_repeating[["Name", "Number"]].reset_index(drop=True).rename_axis('Index').reset_index())
+        st.write(st.session_state.df_repeating[["Name", "Number"]].reset_index(drop=True).rename_axis('Index').reset_index())
 
 # Download options
 col1, col2 = st.columns(2)
 
 with col1:
-    if not df.empty:
-        excel_file = to_excel(df)
+    if not st.session_state.df.empty:
+        excel_file = to_excel(st.session_state.df)
         st.download_button(
             label="📥 Download Regular Customer Data (XLSX)",
             data=excel_file,
@@ -158,8 +159,8 @@ with col1:
         )
 
 with col2:
-    if not df_repeating.empty:
-        excel_file_repeating = to_excel(df_repeating)
+    if not st.session_state.df_repeating.empty:
+        excel_file_repeating = to_excel(st.session_state.df_repeating)
         st.download_button(
             label="📥 Download Repeating Customer Data (XLSX)",
             data=excel_file_repeating,
