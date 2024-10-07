@@ -79,6 +79,8 @@ if 'df' not in st.session_state:
     st.session_state.df = load_data("customers.xlsx")
 if 'df_repeating' not in st.session_state:
     st.session_state.df_repeating = load_data("repeating_customers.xlsx")
+if 'delete_status' not in st.session_state:
+    st.session_state.delete_status = None
 
 # Sidebar for adding new customers
 with st.sidebar:
@@ -141,10 +143,10 @@ with st.sidebar:
                         """, unsafe_allow_html=True)
                         col1, col2 = st.columns(2)
                         with col1:
-                            if st.button(f"Edit {customer['Name']} (Regular)", key=f"edit_regular_{customer['Number']}"):
+                            if st.button(f"Edit (Regular)", key=f"edit_regular_{customer['Number']}"):
                                 st.session_state.edit_customer = {'df': 'regular', 'index': customer.name, 'data': customer}
                         with col2:
-                            if st.button(f"Delete {customer['Name']} (Regular)", key=f"delete_regular_{customer['Number']}"):
+                            if st.button(f"Delete (Regular)", key=f"delete_regular_{customer['Number']}"):
                                 st.session_state.delete_customer = {'df': 'regular', 'index': customer.name}
             
             # Display repeating customers
@@ -161,10 +163,10 @@ with st.sidebar:
                         """, unsafe_allow_html=True)
                         col1, col2 = st.columns(2)
                         with col1:
-                            if st.button(f"Edit {customer['Name']} (Repeating)", key=f"edit_repeating_{customer['Number']}"):
+                            if st.button(f"Edit (Repeating)", key=f"edit_repeating_{customer['Number']}"):
                                 st.session_state.edit_customer = {'df': 'repeating', 'index': customer.name, 'data': customer}
                         with col2:
-                            if st.button(f"Delete {customer['Name']} (Repeating)", key=f"delete_repeating_{customer['Number']}"):
+                            if st.button(f"Delete (Repeating)", key=f"delete_repeating_{customer['Number']}"):
                                 st.session_state.delete_customer = {'df': 'repeating', 'index': customer.name}
             
             # Handle edit action
@@ -181,7 +183,6 @@ with st.sidebar:
                     save_data(df_to_update, "customers.xlsx" if customer['df'] == 'regular' else "repeating_customers.xlsx")
                     st.success("Customer updated successfully!")
                     del st.session_state.edit_customer
-                    st.experimental_rerun()
             
             # Handle delete action
             if 'delete_customer' in st.session_state:
@@ -194,14 +195,18 @@ with st.sidebar:
                         st.session_state.df = df_to_update
                     else:
                         st.session_state.df_repeating = df_to_update
-                    st.success("Customer deleted successfully!")
+                    st.session_state.delete_status = "Customer deleted successfully!"
                     del st.session_state.delete_customer
-                    st.experimental_rerun()
         else:
             st.warning(f"No customer found with this {search_option.lower()}.")
 
 # Main content
 st.title("👥 Customer Manager")
+
+# Display delete status if any
+if st.session_state.delete_status:
+    st.success(st.session_state.delete_status)
+    st.session_state.delete_status = None
 
 # View customers
 col1, col2 = st.columns(2)
