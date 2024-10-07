@@ -210,3 +210,12 @@ with col2:
             file_name="repeating_customers.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
+# Footer
+st.markdown(
+    """
+    <div class="footer">
+        © 2024 JOSHUA. All rights reserved.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
