@@ -32,10 +32,6 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Initialize session state
-if 'data_deleted' not in st.session_state:
-    st.session_state.data_deleted = False
-
 # Function to load data
 def load_data(file_name):
     if os.path.exists(file_name):
@@ -57,21 +53,9 @@ def to_excel(df):
     processed_data = output.getvalue()
     return processed_data
 
-# Function to delete all data
-def delete_all_data():
-    # Clear Excel files
-    pd.DataFrame(columns=["Name", "Number", "Last Updated"]).to_excel("customers.xlsx", index=False)
-    pd.DataFrame(columns=["Name", "Number", "Last Updated"]).to_excel("repeating_customers.xlsx", index=False)
-    st.session_state.data_deleted = True
-    st.success("All data has been deleted successfully!")
-
 # Load data
-if not st.session_state.data_deleted:
-    df = load_data("customers.xlsx")
-    df_repeating = load_data("repeating_customers.xlsx")
-else:
-    df = pd.DataFrame(columns=["Name", "Number", "Last Updated"])
-    df_repeating = pd.DataFrame(columns=["Name", "Number", "Last Updated"])
+df = load_data("customers.xlsx")
+df_repeating = load_data("repeating_customers.xlsx")
 
 # Sidebar for adding new customers
 with st.sidebar:
@@ -100,7 +84,6 @@ with st.sidebar:
                 df = pd.concat([df, new_row], ignore_index=True)
                 save_data(df, "customers.xlsx")
                 st.success("Customer added successfully!")
-            st.session_state.data_deleted = False
         else:
             st.error("Please enter both name and number.")
 
@@ -185,11 +168,3 @@ with col2:
         )
     else:
         st.write("No repeating customers data available.")
-
-# Delete All Data button
-st.subheader("⚠️ Danger Zone")
-if st.button("🗑️ Delete All Data", key="delete_all_data"):
-    confirm_delete = st.warning("Are you sure you want to delete all data? This action cannot be undone.")
-    if st.button("Yes, I'm sure", key="confirm_delete"):
-        delete_all_data()
-        st.experimental_rerun()
